@@ -24,6 +24,8 @@ from strands.models import BedrockModel
 # TODO (Step 1): Add the following imports:
 #   Import streamable_http_client from mcp.client.streamable_http
 #   Import MCPClient from strands.tools.mcp.mcp_client
+from mcp.client.streamable_http import streamable_http_client
+from strands.tools.mcp.mcp_client import MCPClient
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -76,11 +78,26 @@ async def invoke(payload: dict, context=None) -> dict:
 
     
     # TODO Step 2: Connection to the Gateway using MCPClient:
+    client = MCPClient(
+        lambda: streamable_http_client(url=GATEWAY_ENDPOINT)
+    )
    
 
     # TODO Step 3: Discover all tools registered in the Gateway:
+    with client:
+        tools = client.list_tools_sync()
+        logger.info("Discovered %d tools from Gateway", len(tools))
+        
     
         # TODO Step 4: Create the Agent with discovered tools and invoke it:
+        agent = Agent(
+                    model=model,
+                    system_prompt=SYSTEM_PROMPT,
+                    tools=tools,
+                )
+        
+        response = agent(user_message)
+        return response
     
 
 # ---------------------------------------------------------------------------

@@ -76,24 +76,24 @@ GUIDELINES
 class HotelSearchInput(BaseModel):
     """Validated input for a hotel search query."""
     # TODO (Step 2): Add the following fields using the pattern above:
-    #   - city 
-    #   - max_price_usd
+    city: str = Field(description="Name of the destination city, e.g. 'Tokyo'")
+    max_price_usd: float = Field(description="Maximum price per night in USD, e.g. 300.0")
 
 
 class HotelOption(BaseModel):
     """A single validated hotel result."""
     # TODO (Step 3): Add the following fields using the pattern above:
-    #   - hotel_id
-    #   - name
-    #   - city
-    #   - star_rating
-    #   - price_per_night_usd
-    #   - available
-    #   - room_types
-    #   - amenities
-    #   - check_in_time
-    #   - check_out_time
-    #   - cancellation_policy
+    hotel_id: str = Field(description="Hotel unique identifier, e.g 'HT-BCB-001'")
+    name: str = Field(description="Hotel name, e.g. 'Grand Barcelona Hotel'")
+    city: str = Field(description="City where the hotel is located, e.g. 'Tokyo'")
+    star_rating: int = Field(ge=1, le=5, description="Star rating from 1 to 5")
+    price_per_night_usd: float = Field(ge=0, description="Price per night in USD, e.g. 250.0")
+    available: bool = Field(description="Whether the hotel is currently available for booking")
+    room_types: list[str] = Field(description="List of available room types, e.g. ['Standard', 'Deluxe']")
+    amenities: list[str] = Field(description="List of hotel amenities, e.g. ['Pool', 'Sauna']")
+    check_in_time: Optional[str] = Field(default=None, description="Check-in time, e.g. '13:00'")
+    check_out_time: Optional[str] = Field(default=None, description="Check-out time, e.g. '09:00'")
+    cancellation_policy: Optional[str] = Field(default=None, description="Cancellation policy description, e.g. 'Free cancellation within 24 hours'")
 
 
 class HotelSearchResult(BaseModel):
@@ -176,8 +176,16 @@ async def invoke(payload, context=None):
     logger.info("User: %s", user_message[:100])
 
     # TODO (Step 4): Create an Agent with the search_hotels tool and invoke it
+    agent = Agent(
+        model=model,
+        system_prompt=SYSTEM_PROMPT,
+        tools=[search_hotels],
+    )
 
-    pass
+    response = agent(user_message)
+    return response
+
+    
 
 
 if __name__ == "__main__":

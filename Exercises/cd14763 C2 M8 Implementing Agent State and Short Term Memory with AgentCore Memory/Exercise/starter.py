@@ -26,10 +26,14 @@ from pathlib import Path
 from bedrock_agentcore.memory import MemoryClient
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent, tool
-from strands.models import BedrockModel
-
 # TODO (Step 1): Import the following from strands.hooks:
 #   HookProvider, HookRegistry, AgentInitializedEvent, MessageAddedEvent
+from strands.hooks import AgentInitializedEvent
+from strands.hooks import HookProvider
+from strands.hooks import HookRegistry
+from strands.hooks import MessageAddedEvent
+
+from strands.models import BedrockModel
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +50,7 @@ MODEL_ID = "us.amazon.nova-2-lite-v1:0"
 model = BedrockModel(model_id=MODEL_ID)
 
 REGION = "us-east-1"
-MEMORY_ID = ""  # TODO: Set this to your Memory ID from agentcore memory create
+MEMORY_ID = "local-test-memory"  # TODO: Set this to your Memory ID from agentcore memory create
 
 SYSTEM_PROMPT = """You are WanderBot, the AI travel assistant for Horizon Travel.
 
@@ -128,13 +132,16 @@ class ShortTermMemoryHookProvider(HookProvider):
 
     # TODO (Step 2): Store memory_client, memory_id, and last_k_turns as instance attributes
     def __init__(self, memory_client: MemoryClient, memory_id: str, last_k_turns: int = 5):
-        pass
+        self.memory_client = memory_client
+        self.memory_id = memory_id
+        self.last_k_turns = last_k_turns
 
     # TODO (Step 3): Register two callbacks:
     #   - AgentInitializedEvent → self.on_agent_initialized
     #   - MessageAddedEvent → self.on_message_added
     def register_hooks(self, registry: HookRegistry) -> None:
-        pass
+        registry.add_callback(AgentInitializedEvent, self.on_agent_initialized)
+        registry.add_callback(MessageAddedEvent, self.on_message_added)
 
     # ------------------------------------------------------------------
     # The following two methods are provided for you.
@@ -214,7 +221,17 @@ async def invoke(payload: dict, context=None) -> dict:
 
     # TODO (Step 4): Create the agent with the hook provider and state.
    
-    pass
+    agent = Agent(
+        model=model,
+        system_prompt=SYSTEM_PROMPT,
+        tools=[search_hotels],
+        hooks=[ShortTermMemoryHookProvider(memory_client, MEMORY_ID)],
+        state={"actor_id": actor_id, "session_id": session_id},
+    )
+
+    response = agent(user_message)
+    return response
+
 
 
 if __name__ == "__main__":

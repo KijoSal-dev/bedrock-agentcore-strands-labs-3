@@ -29,8 +29,16 @@ See the README for the full console walkthrough.
 import logging
 from typing import Dict
 
+from bedrock_agentcore.memory import MemoryClient
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent
+from strands.hooks import (
+    AfterInvocationEvent,
+    HookProvider,
+    HookRegistry,
+    MessageAddedEvent,
+)
+
 from strands.models import BedrockModel
 
 # TODO Step 2: Import MemoryClient and the hook classes
@@ -90,7 +98,8 @@ class WanderBotMemoryHook(HookProvider):
     #               _retrieve_travel_context for MessageAddedEvent
     #               _save_interaction for AfterInvocationEvent
     def register_hooks(self, registry: HookRegistry) -> None:
-        pass
+        registry.add_callback(MessageAddedEvent, self._retrieve_travel_context)
+        registry.add_callback(AfterInvocationEvent, self._save_interaction)
 
     def _retrieve_travel_context(self, event) -> None:
         """Search each memory namespace and prepend results to the user's message."""
@@ -205,6 +214,30 @@ async def invoke(payload: dict, context=None) -> dict:
     # TODO Step 4: Build the hook with memory_client and memory_id 
     #               and wire it into the agent - include agent state with session_id and actor_id
 
+    @app.entrypoint
+    async def invoke(payload: dict, context=None) -> dict:
+        """WanderBot — Long-Term Memory entry point."""
+        user_message = payload.get("message", "Hello!")
+        session_id   = context.session_id
+        actor_id     = payload.get("actor_id", "wanderbot-user")
+
+        logger.info("Session %s | Actor %s | User: %s", session_id, actor_id, user_message[:80])
+
+        # Create the memory hook
+        memory_hook = WanderBotMemoryHook(memory_client=memory_client, memory_id=MEMORY_ID)
+
+        # Build the agent with the memory hook and state
+        agent = Agent(
+            model=model,
+            system_prompt=SYSTEM_PROMPT,
+            tools=[],
+            state={"session_id": session_id, "actor_id": actor_id},
+            hooks=[memory_hook],  
+        )
+
+        # Invoke the agent with the user's message
+        response = agent(user_message)
+        return response
 
 
 # ---------------------------------------------------------------------------

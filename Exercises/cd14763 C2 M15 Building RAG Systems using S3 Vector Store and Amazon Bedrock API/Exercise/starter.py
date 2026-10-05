@@ -89,6 +89,13 @@ async def invoke(payload: dict, context=None) -> dict:
     logger.info("User: %s", user_message[:80])
 
     # TODO Step 4: Create the agent with search_knowledge_base as a tool and invoke
+    agent = Agent(
+        model=model,
+        system_prompt=SYSTEM_PROMPT,
+        tools=[search_knowledge_base],
+    )
+    response = agent(user_message)
+    return response
  
 
 
