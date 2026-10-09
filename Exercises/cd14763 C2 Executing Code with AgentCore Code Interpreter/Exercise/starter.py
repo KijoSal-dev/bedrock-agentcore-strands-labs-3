@@ -107,15 +107,13 @@ async def invoke(payload: dict, context=None) -> dict:
     logger.info("User: %s", user_message[:80])
 
     # TODO Step 4: Build the Agent with calculate_trip_cost and invoke it
-    #
-    # agent = Agent(
-    #     model=model,
-    #     system_prompt=SYSTEM_PROMPT,
-    #     tools=[calculate_trip_cost],
-    # )
-    # response = agent(user_message)
-    # return response
-    pass
+    agent = Agent(
+        model=model,
+        system_prompt=SYSTEM_PROMPT,
+        tools=[calculate_trip_cost]
+    )
+    response = agent(user_message)
+    return response
 
 
 # ---------------------------------------------------------------------------
